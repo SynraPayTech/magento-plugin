@@ -95,10 +95,9 @@ class Config
 
     public function baseUrl($storeId = null): string
     {
-        $u = $this->mode($storeId) === 'live'
-            ? ($this->get('live_base', $storeId) ?: 'https://api.synrapay.com/v1')
-            : ($this->get('sandbox_base', $storeId) ?: 'https://sandbox-api.synrapay.com/v1');
-        return rtrim($u, '/');
+        return $this->mode($storeId) === 'live'
+            ? 'https://api.synrapay.com/v1'
+            : 'https://sandbox-api.synrapay.com/v1';
     }
 
     /**

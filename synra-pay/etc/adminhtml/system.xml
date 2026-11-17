@@ -87,20 +87,6 @@
                     <comment>Hosted session binds each card session to this website. Register this origin as an allowed origin on your SynraPay merchant (Developers → Integrations), or the session is refused with ORIGIN_NOT_REGISTERED. Sandbox also accepts http://localhost; Live needs https.</comment>
                 </field>
 
-                <field id="urls_heading" translate="label comment" sortOrder="70" showInDefault="1" showInWebsite="1" showInStore="0">
-                    <label>Gateway URLs</label>
-                    <comment>Defaults are correct for most merchants — only change if SynraPay gave you custom hosts.</comment>
-                    <frontend_model>Magento\Config\Block\System\Config\Form\Field\Heading</frontend_model>
-                </field>
-                <field id="live_base" translate="label" type="text" sortOrder="71" showInDefault="1" showInWebsite="1" showInStore="0">
-                    <label>Production base URL</label>
-                    <config_path>payment/synra_pay/live_base</config_path>
-                </field>
-                <field id="sandbox_base" translate="label" type="text" sortOrder="72" showInDefault="1" showInWebsite="1" showInStore="0">
-                    <label>Sandbox base URL</label>
-                    <config_path>payment/synra_pay/sandbox_base</config_path>
-                </field>
-
                 <field id="allowspecific" translate="label" type="allowspecific" sortOrder="80" showInDefault="1" showInWebsite="1" showInStore="0">
                     <label>Payment from Applicable Countries</label>
                     <source_model>Magento\Payment\Model\Config\Source\Allspecificcountries</source_model>
