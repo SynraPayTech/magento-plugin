@@ -7,8 +7,8 @@ server.
 
 | | |
 |---|---|
-| 📦 Module | `Synra_Pay` v1.0.3 — folder [`synra-pay/`](./synra-pay) (= `app/code/Synra/Pay`) |
-| 🛒 Magento | 2.4.0 or greater (Luma and Hyvä-compatible Knockout checkout) |
+| 📦 Module | `Synra_Pay` v1.0.4 — folder [`synra-pay/`](./synra-pay) (= `app/code/Synra/Pay`) |
+| 🛒 Magento | 2.4.6 or greater (Luma and Hyvä-compatible Knockout checkout) |
 | 🐘 PHP | 8.2 or greater |
 | 🔐 Integration | SynraPay Direct API — hosted session, signature v2 |
 
@@ -43,9 +43,10 @@ Sandbox and Live each have their **own portal and own keys**. Start with Sandbox
 ### Option A — upload the ready zip
 
 1. Download [`synra-pay-magento2.zip`](https://github.com/SynraPayTech/magento-plugin/releases/latest/download/synra-pay-magento2.zip) (always the latest release).
-2. Unzip at your Magento root. It creates `app/code/Synra/Pay/`:
+2. The zip holds the module's files directly (`composer.json`, `registration.php`, `etc/`, `Model/`, ...). Extract it into `app/code/Synra/Pay/` under your Magento root:
    ```sh
-   unzip synra-pay-magento2.zip -d /var/www/magento
+   mkdir -p /var/www/magento/app/code/Synra/Pay
+   unzip synra-pay-magento2.zip -d /var/www/magento/app/code/Synra/Pay
    ```
 
 ### Option B — copy the folder
@@ -152,7 +153,7 @@ Place Order  →  Magento places the order as usual (pending_payment, no email y
 synra-pay/                               the module (= app/code/Synra/Pay)
 ├── etc/                                 module, config, di (gateway Adapter), events, crontab, admin form, routes
 ├── Model/                               Config, Api/Client (signed Direct API), HostedSession, OrderSettler, OrderFinder, Ui/ConfigProvider
-├── Gateway/Command/                     Initialize (links the Magento order), Refund (placeholder route)
+├── Gateway/Command/                     Initialize (links the Magento order)
 ├── Controller/Hs/                       session + confirm (checkout AJAX)
 ├── Controller/Webhook/                  signed webhook
 ├── Cron/Recheck.php                     re-check pending orders
@@ -166,13 +167,14 @@ dist/                                    ready-to-install zip
 
 - Rebuild the zip with `sh build-zip.sh` (uses `zip` or Windows `tar`; forward-slash entries).
 - Order data: `sales_order.ext_order_id` = SynraPay order id; payment `additional_information` carries `synra_merchant_order_id`, `synra_direct_order_id`, `synra_transaction_id`, `synra_authorization_code`, `synra_env`.
-- Refund from a credit memo calls `POST /v1/direct/refund`, a **placeholder** route until the payment service publishes the final one.
+- Refunds are made in the SynraPay Merchant Portal. A credit memo in Magento is offline: it records the refund in Magento and sends nothing to SynraPay.
 - Not included on purpose: hosted-checkout redirect mode, admin-placed orders (`can_use_internal` = 0), saved cards.
 
 ---
 
 ## 📝 Changelog
 
+- **1.0.4** (2026-11-17) The plugin calls its own door on SynraPay (`/v1/direct/plugins/magento`): the bank's 3-D Secure check opens over the checkout page. The Gateway URLs settings are gone: the SynraPay API address is set by Environment. Refunds are made in the SynraPay Merchant Portal; a credit memo in Magento is offline. Run `setup:upgrade`, `setup:di:compile` and redeploy static content after updating.
 - **1.0.3** (2026-11-14) SynraPay made its card-fields script (sdk.js) internal: a store page that loads it directly now gets "Something went wrong" and no card form. The card form is loaded through SynraPay's public hosted-session.js (SynraHostedSession.mount) instead. Environments are Sandbox and Live only (a store saved on Develop runs as Sandbox). The webhook secret is the one "Webhook secret (KEY_SHA512)" from Developers → API Keys; the per-endpoint Signing secret is gone from the portal. A card detail to fix keeps the placed order and the card session: the next Place Order pays that same order. Run `setup:upgrade` and redeploy static content after updating.
 - **1.0.2** (2026-11-11) One transaction id. The Direct API order id is the Transaction ID the merchant dashboard shows, and every Direct API answer carries `transaction_id` equal to it. The Magento transaction / invoice id is `transaction_id` (falling back to `order_id`); `synrapay_transaction_id` is no longer read. Webhook settlement takes the Transaction ID from the webhook body's `transactionId` and no longer makes a status read for it. The admin payment block and the order comment show one Transaction ID line; the separate "SynraPay order ID" line is gone because it would repeat it (`synra_direct_order_id` is still stored for status reads and refunds).
 - **1.0.1** — The Magento transaction / invoice id is now the SynraPay merchant dashboard's Transaction ID (`synrapay_transaction_id`, falling back to the Direct API order id on older API answers); the Direct API order id is kept separately as "SynraPay order ID", and the authorization code is shown when present. The gateway reference is no longer stored or shown. Webhook settlement reads the order status once to pick up the Transaction ID.

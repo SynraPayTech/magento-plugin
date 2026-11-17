@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
     <!-- The payment method: Magento's gateway Adapter with an "initialize" command (links the
-         Magento order to the Direct API order the card fields were opened on, no charge yet)
-         and a "refund" command. -->
+         Magento order to the Direct API order the card fields were opened on, no charge yet).
+         Refunds are made in the SynraPay Merchant Portal; a credit memo here is offline. -->
     <virtualType name="SynraPayFacade" type="Magento\Payment\Model\Method\Adapter">
         <arguments>
             <argument name="code" xsi:type="const">Synra\Pay\Model\Config::CODE</argument>
@@ -49,7 +49,6 @@
         <arguments>
             <argument name="commands" xsi:type="array">
                 <item name="initialize" xsi:type="string">Synra\Pay\Gateway\Command\Initialize</item>
-                <item name="refund" xsi:type="string">Synra\Pay\Gateway\Command\Refund</item>
             </argument>
         </arguments>
     </virtualType>

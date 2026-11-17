@@ -22,16 +22,18 @@ use Synra\Pay\Model\Log;
  *   POST /direct/create-order              the order
  *   POST /direct/hosted-session            a session on it → client_token
  *   GET  /direct/payment/{id}/status       confirm before fulfilling
- *   POST /direct/refund                    PLACEHOLDER until the payment service publishes the route
  */
 class Client
 {
-    const PATH_CREATE_ORDER   = '/direct/create-order';
-    const PATH_HOSTED_SESSION = '/direct/hosted-session';
-    const PATH_STATUS         = '/direct/payment/%s/status';
-    const PATH_REFUND         = '/direct/refund';
+    // The magento door of SynraPay's plugin platform (/v1/direct/plugins/magento/*):
+    // the Direct API's own orders, sessions and status, with this plugin's rules
+    // applied by SynraPay (the bank's 3-D Secure check opens over the checkout
+    // page; saved cards follow the Save cards switch SynraPay holds for this plugin).
+    const PATH_CREATE_ORDER   = '/direct/plugins/magento/orders';
+    const PATH_HOSTED_SESSION = '/direct/plugins/magento/sessions';
+    const PATH_STATUS         = '/direct/plugins/magento/orders/%s/status';
 
-    const VERSION = '1.0.3';
+    const VERSION = '1.0.4';
 
     /** @var CurlFactory */
     private $curlFactory;
@@ -108,12 +110,6 @@ class Client
         return $this->call('GET', sprintf(self::PATH_STATUS, rawurlencode($orderId)), null, $timeout);
     }
 
-    /** PLACEHOLDER refund route — same contract as the WooCommerce plugin. */
-    public function refund(array $payload): array
-    {
-        return $this->call('POST', self::PATH_REFUND, $payload);
-    }
-
     /**
      * One signed Direct API call. Returns [ok(bool), data(array|null), error(string)].
      */
@@ -149,6 +145,9 @@ class Client
             'x-signature-version' => '2',
             'x-signature'         => $sig,
             'user-agent'          => 'SynraPay-Magento2/' . self::VERSION,
+            // Shown to SynraPay support beside this store's module; never used to decide anything.
+            'x-synrapay-plugin-version'   => self::VERSION,
+            'x-synrapay-platform-version' => 'Magento 2',
         ]);
 
         // Debug trace of the signing inputs. The key itself is never written.
