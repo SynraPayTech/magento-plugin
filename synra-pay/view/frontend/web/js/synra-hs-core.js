@@ -220,12 +220,15 @@ define(['jquery', 'mage/cookies'], function ($) {
     /* ── pay + confirm ─────────────────────────────────────────────────────── */
     function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
 
-    function confirm(orderId, maxTries, frameOk) {
+    // abandon ('cancel' | 'declined'): the attempt ended without a payment. The
+    // store then cancels the unpaid order, restores the cart and answers where
+    // to send the shopper.
+    function confirm(orderId, maxTries, frameOk, abandon) {
         var tries = maxTries || 60;
         function once() {
-            return post(cfg.confirmUrl, { order_id: orderId, frame_ok: frameOk ? '1' : '' }).then(function (r) {
+            return post(cfg.confirmUrl, { order_id: orderId, frame_ok: frameOk ? '1' : '', abandon: abandon || '' }).then(function (r) {
                 if (r && r.status === 'paid' && r.redirect) { return { paid: true, redirect: r.redirect }; }
-                if (r && r.status === 'failed') { return { paid: false, failed: true, message: r.error }; }
+                if (r && r.status === 'failed') { return { paid: false, failed: true, message: r.error, redirect: r.redirect }; }
                 if (r && r.status === 'error') { return { paid: false, failed: true, message: r.error }; }
                 if (--tries <= 0) { return { paid: false, failed: false, message: i18n.declined || 'Your payment was not completed.' }; }
                 return sleep(1500).then(once);
@@ -268,14 +271,19 @@ define(['jquery', 'mage/cookies'], function ($) {
             if (r.code) {
                 return { paid: false, inline: true, message: r.message || i18n.incomplete || 'Please check your card details.' };
             }
-            // Declined or cancelled: one quick read settles the Magento order as
-            // failed when the Direct API order is closed; an order that stays
-            // open is not waited on.
-            return confirm(orderId, 2).then(function (c) { return c.paid ? c : { paid: false, failed: true, message: r.message || c.message }; });
+            // Declined or cancelled: the store reads the order once more, cancels
+            // the unpaid Magento order, restores the cart and sends the shopper to
+            // it with the reason. Magento emptied the cart when the order was
+            // placed, so there is nothing to retry on this page.
+            return confirm(orderId, 3, false, r.status === 'cancel' ? 'cancel' : 'declined').then(function (c) {
+                return c.paid ? c : { paid: false, failed: true, message: r.message || c.message, redirect: c.redirect };
+            });
         }).then(function (out) {
             state.busy = false;
             if (out.paid) { setStatus(i18n.confirming || 'Confirming…', 'muted'); w.location.assign(out.redirect); return; }
             var msg = out.message || (i18n.declined || 'Your payment was not completed. Please try again or use another card.');
+            // The cart is back: go to it. The loader stays up until the page changes.
+            if (out.redirect) { setStatus(msg, 'error'); w.location.assign(out.redirect); return; }
             emit('busy', { busy: false });
             setError(msg);
             emit('fail', { message: msg, retry: true, inline: !!out.inline, orderId: orderId });

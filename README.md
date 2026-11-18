@@ -7,7 +7,7 @@ server.
 
 | | |
 |---|---|
-| 📦 Module | `Synra_Pay` v1.0.4 — folder [`synra-pay/`](./synra-pay) (= `app/code/Synra/Pay`) |
+| 📦 Module | `Synra_Pay` v1.0.5 — folder [`synra-pay/`](./synra-pay) (= `app/code/Synra/Pay`) |
 | 🛒 Magento | 2.4.6 or greater (Luma and Hyvä-compatible Knockout checkout) |
 | 🐘 PHP | 8.2 or greater |
 | 🔐 Integration | SynraPay Direct API — hosted session, signature v2 |
@@ -174,6 +174,7 @@ dist/                                    ready-to-install zip
 
 ## 📝 Changelog
 
+- **1.0.5** (2026-11-18) A cancelled or declined payment no longer costs the shopper their cart. Magento empties the cart when the order is placed, before the card is charged; the module now cancels the unpaid order, restores the cart and sends the shopper to the cart page with the reason ("Payment cancelled. You have not been charged"). A shopper who reloads or leaves during the payment gets the cart back on their next visit to the cart or checkout, unless SynraPay says the order is paid or still being confirmed. Only a paid order keeps the cart empty. Run `setup:upgrade`, `setup:di:compile` and redeploy static content after updating.
 - **1.0.4** (2026-11-17) The plugin calls its own door on SynraPay (`/v1/direct/plugins/magento`): the bank's 3-D Secure check opens over the checkout page. The Gateway URLs settings are gone: the SynraPay API address is set by Environment. Refunds are made in the SynraPay Merchant Portal; a credit memo in Magento is offline. Run `setup:upgrade`, `setup:di:compile` and redeploy static content after updating. The two checkout controllers import the response and form-key classes they use, so `setup:di:compile` no longer fails.
 - **1.0.3** (2026-11-14) SynraPay made its card-fields script (sdk.js) internal: a store page that loads it directly now gets "Something went wrong" and no card form. The card form is loaded through SynraPay's public hosted-session.js (SynraHostedSession.mount) instead. Environments are Sandbox and Live only (a store saved on Develop runs as Sandbox). The webhook secret is the one "Webhook secret (KEY_SHA512)" from Developers → API Keys; the per-endpoint Signing secret is gone from the portal. A card detail to fix keeps the placed order and the card session: the next Place Order pays that same order. Run `setup:upgrade` and redeploy static content after updating.
 - **1.0.2** (2026-11-11) One transaction id. The Direct API order id is the Transaction ID the merchant dashboard shows, and every Direct API answer carries `transaction_id` equal to it. The Magento transaction / invoice id is `transaction_id` (falling back to `order_id`); `synrapay_transaction_id` is no longer read. Webhook settlement takes the Transaction ID from the webhook body's `transactionId` and no longer makes a status read for it. The admin payment block and the order comment show one Transaction ID line; the separate "SynraPay order ID" line is gone because it would repeat it (`synra_direct_order_id` is still stored for status reads and refunds).
