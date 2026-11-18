@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Event/etc/events.xsd">
+    <!-- Back on the cart or the checkout with an unpaid SynraPay order (page reloaded, or the
+         shopper left during the payment): give the cart back. Only a paid order keeps it empty. -->
+    <event name="controller_action_predispatch_checkout_cart_index">
+        <observer name="synra_pay_restore_cart" instance="Synra\Pay\Observer\RestoreCart"/>
+    </event>
+    <event name="controller_action_predispatch_checkout_index_index">
+        <observer name="synra_pay_restore_cart" instance="Synra\Pay\Observer\RestoreCart"/>
+    </event>
+</config>

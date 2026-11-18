@@ -15,6 +15,7 @@ use Magento\Framework\UrlInterface;
 use Magento\Sales\Api\OrderRepositoryInterface;
 use Magento\Sales\Model\Order;
 use Synra\Pay\Model\Api\Client;
+use Synra\Pay\Model\CartRestorer;
 use Synra\Pay\Model\Config;
 use Synra\Pay\Model\HostedSession;
 use Synra\Pay\Model\Log;
@@ -27,8 +28,14 @@ use Synra\Pay\Model\OrderSettler;
  * session just placed can be asked about.
  *
  *   paid    → { status:'paid', redirect }   invoice + processing, cart emptied
- *   failed  → { status:'failed', error }    order canceled, quote restored for a retry
+ *   failed  → { status:'failed', error, redirect }   order canceled, cart restored, shopper sent to the cart
  *   pending → { status:'pending' }          ask again
+ *
+ * `abandon` (cancel | declined) is the page saying the attempt ended without a
+ * payment: the shopper cancelled the bank check, or the card was declined. When
+ * SynraPay's own answer shows no payment either, the unpaid Magento order is
+ * canceled and the cart given back at once, even though the SynraPay order is
+ * still open. A paid or still-confirming order is never abandoned.
  */
 class Confirm extends CsrfJson implements HttpPostActionInterface
 {
@@ -54,6 +61,8 @@ class Confirm extends CsrfJson implements HttpPostActionInterface
     private $urlBuilder;
     /** @var Log */
     private $log;
+    /** @var CartRestorer */
+    private $restorer;
 
     public function __construct(
         HttpRequest $request,
@@ -68,7 +77,8 @@ class Confirm extends CsrfJson implements HttpPostActionInterface
         Config $config,
         CacheInterface $cache,
         UrlInterface $urlBuilder,
-        Log $log
+        Log $log,
+        CartRestorer $restorer
     ) {
         $this->request         = $request;
         $this->response        = $response;
@@ -83,6 +93,7 @@ class Confirm extends CsrfJson implements HttpPostActionInterface
         $this->cache           = $cache;
         $this->urlBuilder      = $urlBuilder;
         $this->log             = $log;
+        $this->restorer        = $restorer;
     }
 
     public function execute()
@@ -162,16 +173,33 @@ class Confirm extends CsrfJson implements HttpPostActionInterface
             $this->hostedSession->clear();
             return $json->setData($this->paid());
         }
+        $abandon = (string) $this->request->getParam('abandon', '');
         if ($outcome === 'failed') {
             $reason = !empty($data['error_message']) ? (string) $data['error_message'] : (!empty($data['reason']) ? (string) $data['reason'] : strtolower($status));
-            // The quote comes back so the shopper can place the order again;
-            // a failed Direct API order cannot be paid, so the next session
-            // opens a new one.
-            $this->hostedSession->clear();
-            $this->checkoutSession->restoreQuote();
-            return $json->setData(['ok' => false, 'status' => 'failed', 'error' => $reason]);
+            // The cart comes back so the shopper can order again; a failed
+            // Direct API order cannot be paid, so the next session opens a new one.
+            return $json->setData($this->lost($order, $reason, $abandon === 'cancel'));
+        }
+        // The page says the attempt is over (bank check cancelled, or card
+        // declined) and SynraPay shows no payment: the SynraPay order is still
+        // open, but this Magento order is finished. $ok: only on a real answer.
+        if ($outcome === 'pending' && $ok && !$frameOk && !$awaiting && in_array($abandon, ['cancel', 'declined'], true)) {
+            return $json->setData($this->lost($order, $abandon === 'cancel' ? 'cancelled by the shopper' : 'declined', $abandon === 'cancel'));
         }
         return $json->setData(['ok' => false, 'status' => 'pending']);
+    }
+
+    /** The order is canceled, the cart is back, and the shopper goes to it with the reason on top. */
+    private function lost(Order $order, string $reason, bool $cancelled): array
+    {
+        $notice = $cancelled
+            ? (string) __('Payment cancelled. You have not been charged, and your cart is unchanged.')
+            : (string) __('Your payment was not completed and you have not been charged. Your cart is unchanged. Please try again or use another card.');
+        $this->restorer->giveBack($order, $reason, 'confirm', $notice);
+        return [
+            'ok' => false, 'status' => 'failed', 'error' => $notice,
+            'redirect' => $this->urlBuilder->getUrl('checkout/cart', ['_secure' => true]),
+        ];
     }
 
     private function paid(): array
