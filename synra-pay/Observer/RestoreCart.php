@@ -52,14 +52,19 @@ class RestoreCart implements ObserverInterface
     public function execute(Observer $observer)
     {
         try {
-            $this->restore();
+            // The cart page renders session messages straight away. The checkout
+            // page may not, and a message left queued would appear later on
+            // another page (the success page of the next, paid, order).
+            $request = $observer->getEvent()->getData('request');
+            $onCart  = $request && method_exists($request, 'getFullActionName') && $request->getFullActionName() === 'checkout_cart_index';
+            $this->restore($onCart);
         } catch (\Throwable $e) {
             // Never in the way of the cart or the checkout page.
             $this->log->warning('cart restore skipped: ' . $e->getMessage());
         }
     }
 
-    private function restore(): void
+    private function restore(bool $withNotice): void
     {
         $order = $this->checkoutSession->getLastRealOrder();
         if (!$order || !$order->getId() || !$order->getPayment()) {
@@ -96,7 +101,7 @@ class RestoreCart implements ObserverInterface
             $order,
             'not completed, the shopper left the payment',
             'return',
-            (string) __('Your payment was not completed and you have not been charged. Your cart has been restored.')
+            $withNotice ? (string) __('Your payment was not completed and you have not been charged. Your cart has been restored.') : ''
         );
     }
 }

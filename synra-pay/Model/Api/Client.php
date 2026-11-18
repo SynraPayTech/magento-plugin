@@ -33,7 +33,7 @@ class Client
     const PATH_HOSTED_SESSION = '/direct/plugins/magento/sessions';
     const PATH_STATUS         = '/direct/plugins/magento/orders/%s/status';
 
-    const VERSION = '1.0.5';
+    const VERSION = '1.0.6';
 
     /** @var CurlFactory */
     private $curlFactory;
