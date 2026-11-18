@@ -28,14 +28,12 @@ use Synra\Pay\Model\OrderSettler;
  * session just placed can be asked about.
  *
  *   paid    → { status:'paid', redirect }   invoice + processing, cart emptied
- *   failed  → { status:'failed', error, redirect }   order canceled, cart restored, shopper sent to the cart
+ *   failed  → { status:'failed', error, redirect }   order canceled, cart restored, shopper sent to the failed page
  *   pending → { status:'pending' }          ask again
  *
- * `abandon` (cancel | declined) is the page saying the attempt ended without a
- * payment: the shopper cancelled the bank check, or the card was declined. When
- * SynraPay's own answer shows no payment either, the unpaid Magento order is
- * canceled and the cart given back at once, even though the SynraPay order is
- * still open. A paid or still-confirming order is never abandoned.
+ * A payment the card frame reports as cancelled or declined does not come
+ * here: the page goes to synra/hs/failed (Controller\Hs\Failed), which settles
+ * the order on arrival.
  */
 class Confirm extends CsrfJson implements HttpPostActionInterface
 {
@@ -173,33 +171,19 @@ class Confirm extends CsrfJson implements HttpPostActionInterface
             $this->hostedSession->clear();
             return $json->setData($this->paid());
         }
-        $abandon = (string) $this->request->getParam('abandon', '');
         if ($outcome === 'failed') {
             $reason = !empty($data['error_message']) ? (string) $data['error_message'] : (!empty($data['reason']) ? (string) $data['reason'] : strtolower($status));
             // The cart comes back so the shopper can order again; a failed
-            // Direct API order cannot be paid, so the next session opens a new one.
-            return $json->setData($this->lost($order, $reason, $abandon === 'cancel'));
-        }
-        // The page says the attempt is over (bank check cancelled, or card
-        // declined) and SynraPay shows no payment: the SynraPay order is still
-        // open, but this Magento order is finished. $ok: only on a real answer.
-        if ($outcome === 'pending' && $ok && !$frameOk && !$awaiting && in_array($abandon, ['cancel', 'declined'], true)) {
-            return $json->setData($this->lost($order, $abandon === 'cancel' ? 'cancelled by the shopper' : 'declined', $abandon === 'cancel'));
+            // Direct API order cannot be paid, so the next session opens a new
+            // one. The failed page says what happened (no session message: one
+            // queued here would show on whichever page renders messages next).
+            $this->restorer->giveBack($order, $reason, 'confirm');
+            return $json->setData([
+                'ok' => false, 'status' => 'failed', 'error' => $reason,
+                'redirect' => $this->urlBuilder->getUrl('synra/hs/failed', ['_secure' => true, '_query' => ['reason' => 'declined']]),
+            ]);
         }
         return $json->setData(['ok' => false, 'status' => 'pending']);
-    }
-
-    /** The order is canceled, the cart is back, and the shopper goes to it with the reason on top. */
-    private function lost(Order $order, string $reason, bool $cancelled): array
-    {
-        $notice = $cancelled
-            ? (string) __('Payment cancelled. You have not been charged, and your cart is unchanged.')
-            : (string) __('Your payment was not completed and you have not been charged. Your cart is unchanged. Please try again or use another card.');
-        $this->restorer->giveBack($order, $reason, 'confirm', $notice);
-        return [
-            'ok' => false, 'status' => 'failed', 'error' => $notice,
-            'redirect' => $this->urlBuilder->getUrl('checkout/cart', ['_secure' => true]),
-        ];
     }
 
     private function paid(): array

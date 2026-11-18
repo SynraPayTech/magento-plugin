@@ -1,0 +1,43 @@
+<?php
+/**
+ * The page a cancelled or declined payment lands on.
+ *
+ * @var \Magento\Framework\View\Element\Template $block
+ * @var \Magento\Framework\Escaper $escaper
+ */
+$view   = (string) $block->getData('view');
+$number = (string) $block->getData('order_number');
+$cartUrl = $block->getUrl('checkout/cart', ['_secure' => true]);
+$homeUrl = $block->getUrl('', ['_secure' => true]);
+?>
+<div class="synra-pay-failed">
+    <?php if ($view === 'confirming'): ?>
+        <div class="message info"><div><?= $escaper->escapeHtml(__('Your payment is being confirmed. Please do not pay again.')) ?></div></div>
+        <p><?= $escaper->escapeHtml(__('We will email you as soon as it is confirmed.')) ?></p>
+        <?php if ($number !== ''): ?>
+            <p><?= $escaper->escapeHtml(__('Order # %1', $number)) ?></p>
+        <?php endif; ?>
+        <div class="actions-toolbar">
+            <div class="primary">
+                <a class="action primary" href="<?= $escaper->escapeUrl($homeUrl) ?>"><span><?= $escaper->escapeHtml(__('Continue Shopping')) ?></span></a>
+            </div>
+        </div>
+    <?php else: ?>
+        <div class="message error"><div>
+            <?= $escaper->escapeHtml($view === 'cancelled'
+                ? __('You cancelled the payment. You have not been charged.')
+                : __('Your payment was not completed. You have not been charged.')) ?>
+        </div></div>
+        <p><?= $escaper->escapeHtml($view === 'cancelled'
+            ? __('Your cart is saved. You can try again whenever you are ready.')
+            : __('Your cart is saved. You can try again, or use another card.')) ?></p>
+        <div class="actions-toolbar">
+            <div class="primary">
+                <a class="action primary" href="<?= $escaper->escapeUrl($cartUrl) ?>"><span><?= $escaper->escapeHtml(__('Try again')) ?></span></a>
+            </div>
+            <div class="secondary">
+                <a class="action" href="<?= $escaper->escapeUrl($homeUrl) ?>"><span><?= $escaper->escapeHtml(__('Continue Shopping')) ?></span></a>
+            </div>
+        </div>
+    <?php endif; ?>
+</div>

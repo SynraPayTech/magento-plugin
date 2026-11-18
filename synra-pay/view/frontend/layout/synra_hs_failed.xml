@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<!-- The page a cancelled or declined payment lands on (Controller\Hs\Failed). Never cached: it is about this shopper's order. -->
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" layout="1column" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <referenceContainer name="content">
+            <block class="Magento\Framework\View\Element\Template" name="synra.pay.failed" template="Synra_Pay::failed.phtml" cacheable="false"/>
+        </referenceContainer>
+    </body>
+</page>

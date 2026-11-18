@@ -44,6 +44,8 @@ class ConfigProvider implements ConfigProviderInterface
                     'sdkUrl'      => $this->config->sdkUrl(),
                     'sessionUrl'  => $this->urlBuilder->getUrl('synra/hs/session', ['_secure' => true]),
                     'confirmUrl'  => $this->urlBuilder->getUrl('synra/hs/confirm', ['_secure' => true]),
+                    // Where a cancelled or declined payment sends the shopper (Controller\Hs\Failed).
+                    'failedUrl'   => $this->urlBuilder->getUrl('synra/hs/failed', ['_secure' => true]),
                     'successUrl'  => $this->urlBuilder->getUrl('checkout/onepage/success', ['_secure' => true]),
                     'hsField'     => HostedSession::HS_FIELD,
                     'dialCodes'   => \Synra\Pay\Model\DialCodes::CODES,
