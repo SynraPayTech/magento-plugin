@@ -5,7 +5,9 @@ namespace Synra\Pay\Controller\Hs;
 
 use Magento\Framework\App\Action\HttpPostActionInterface;
 use Magento\Framework\App\Request\Http as HttpRequest;
+use Magento\Framework\App\Response\Http as HttpResponse;
 use Magento\Framework\Controller\Result\JsonFactory;
+use Magento\Framework\Data\Form\FormKey\Validator as FormKeyValidator;
 use Magento\Framework\Exception\LocalizedException;
 use Synra\Pay\Model\Config;
 use Synra\Pay\Model\HostedSession;
