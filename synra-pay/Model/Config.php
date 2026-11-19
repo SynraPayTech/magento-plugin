@@ -107,8 +107,8 @@ class Config
     public function sdkUrl($storeId = null): string
     {
         return $this->mode($storeId) === 'live'
-            ? 'https://js.synrapay.com/direct/v1/hosted-session.js'
-            : 'https://sandbox.js.synrapay.com/direct/v1/hosted-session.js';
+            ? 'https://js.synrapay.com/hosted-session.js'
+            : 'https://sandbox.js.synrapay.com/hosted-session.js';
     }
 
     public function merchantId($storeId = null): string

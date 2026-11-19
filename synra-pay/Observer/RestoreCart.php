@@ -91,7 +91,7 @@ class RestoreCart implements ObserverInterface
         if (!$ok || !is_array($data)) {
             return;
         }
-        if (isset($data['confirmation']) && $data['confirmation'] === 'awaiting_mastercard') {
+        if (isset($data['confirmation']) && $data['confirmation'] === 'awaiting_confirmation') {
             return;
         }
         if ($this->settler->applyStatus($order, $data, 'return') === 'paid') {

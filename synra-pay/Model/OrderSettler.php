@@ -199,8 +199,8 @@ class OrderSettler
     public function applyStatus(Order $order, array $data, string $source): string
     {
         $status   = strtoupper(isset($data['status']) ? (string) $data['status'] : '');
-        $awaiting = isset($data['confirmation']) && $data['confirmation'] === 'awaiting_mastercard';
-        if (!$awaiting && in_array($status, ['CAPTURED', 'AUTHORIZED'], true)) {
+        $awaiting = isset($data['confirmation']) && $data['confirmation'] === 'awaiting_confirmation';
+        if (!$awaiting && in_array($status, ['CAPTURED'], true)) {
             $this->markPaid($order, $data, $source);
             return 'paid';
         }
