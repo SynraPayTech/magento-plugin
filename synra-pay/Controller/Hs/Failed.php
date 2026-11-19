@@ -130,7 +130,7 @@ class Failed implements HttpGetActionInterface
         if (!$ok || !is_array($data)) {
             return 'lost';   // no answer: cancel nothing here
         }
-        if (isset($data['confirmation']) && $data['confirmation'] === 'awaiting_mastercard') {
+        if (isset($data['confirmation']) && $data['confirmation'] === 'awaiting_confirmation') {
             return 'confirming';
         }
         if ($this->settler->applyStatus($order, $data, 'failed-page') === 'paid') {

@@ -150,10 +150,10 @@ class Confirm extends CsrfJson implements HttpPostActionInterface
         }
 
         $status   = strtoupper(isset($data['status']) ? (string) $data['status'] : '');
-        $awaiting = isset($data['confirmation']) && $data['confirmation'] === 'awaiting_mastercard';
-        $this->log->info('confirm #' . $order->getIncrementId() . ' → ' . $status . ($awaiting ? ' (awaiting_mastercard)' : '') . ($frameOk ? ' frame:ok' : ''));
+        $awaiting = isset($data['confirmation']) && $data['confirmation'] === 'awaiting_confirmation';
+        $this->log->info('confirm #' . $order->getIncrementId() . ' → ' . $status . ($awaiting ? ' (awaiting_confirmation)' : '') . ($frameOk ? ' frame:ok' : ''));
 
-        $finalPaid = !$awaiting && in_array($status, ['CAPTURED', 'AUTHORIZED'], true);
+        $finalPaid = !$awaiting && in_array($status, ['CAPTURED'], true);
         $finalLost = !$awaiting && in_array($status, ['FAILED', 'CANCELLED', 'EXPIRED', 'DECLINED'], true);
 
         // Approved in the card frame but not yet final at SynraPay (PENDING, or
